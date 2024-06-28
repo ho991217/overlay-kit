@@ -84,7 +84,9 @@ describe('overlay 객체는', () => {
 
     render(<Component />, { wrapper });
 
-    overlay.unmountAll();
+    act(() => {
+      overlay.unmountAll();
+    });
 
     await waitFor(() => {
       expect(screen.queryByText(testContent1)).not.toBeInTheDocument();
@@ -126,5 +128,89 @@ describe('overlay 객체는', () => {
     expect(screen.queryByText(testContent2)).toBeInTheDocument();
     expect(screen.queryByText(testContent3)).toBeInTheDocument();
     expect(screen.queryByText(testContent4)).toBeInTheDocument();
+  });
+
+  it('close를 통해 isOpen을 false로 만들어야한다.', async () => {
+    let isOpen = false;
+    const wrapper = ({ children }: PropsWithChildren) => <OverlayProvider>{children}</OverlayProvider>;
+
+    const testContent = 'context-modal-test-content';
+    const Component = () => {
+      useEffect(() => {
+        overlay.open(({ isOpen: _isOpen, close }) => {
+          isOpen = _isOpen;
+          return (
+            <p
+              onClick={() => {
+                close();
+              }}
+            >
+              {testContent}
+            </p>
+          );
+        });
+      });
+      return <div>Empty</div>;
+    };
+
+    render(<Component />, { wrapper });
+
+    await waitFor(() => {
+      expect(isOpen).toBe(true);
+    });
+
+    const testContentElement = await screen.findByText(testContent);
+    act(() => {
+      testContentElement.click();
+    });
+
+    expect(isOpen).toBe(false);
+  });
+
+  it('overlay.closeAll을 톨해 모든 overlay의 isOpen을 false로 만들어야 한다.', async () => {
+    const isOpen = [false, false, false, false];
+    const wrapper = ({ children }: PropsWithChildren) => <OverlayProvider>{children}</OverlayProvider>;
+
+    const testContent1 = 'context-modal-test-content-1';
+    const testContent2 = 'context-modal-test-content-2';
+    const testContent3 = 'context-modal-test-content-3';
+    const testContent4 = 'context-modal-test-content-4';
+
+    const Component = () => {
+      useEffect(() => {
+        overlay.open(({ isOpen: _isOpen }) => {
+          isOpen[0] = _isOpen;
+          return <p>{testContent1}</p>;
+        });
+        overlay.open(({ isOpen: _isOpen }) => {
+          isOpen[1] = _isOpen;
+          return <p>{testContent2}</p>;
+        });
+        overlay.open(({ isOpen: _isOpen }) => {
+          isOpen[2] = _isOpen;
+          return <p>{testContent3}</p>;
+        });
+        overlay.open(({ isOpen: _isOpen }) => {
+          isOpen[3] = _isOpen;
+          return <p>{testContent4}</p>;
+        });
+      }, []);
+
+      return <div>Empty</div>;
+    };
+
+    render(<Component />, { wrapper });
+
+    await waitFor(() => {
+      expect(isOpen).toEqual([true, true, true, true]);
+    });
+
+    act(() => {
+      overlay.closeAll();
+    });
+
+    await waitFor(() => {
+      expect(isOpen).toEqual([false, false, false, false]);
+    });
   });
 });

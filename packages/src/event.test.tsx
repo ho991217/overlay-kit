@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { useEffect, type PropsWithChildren } from 'react';
 import { describe, expect, it } from 'vitest';
 import { OverlayProvider } from './context/provider';
@@ -53,6 +53,45 @@ describe('overlay 객체는', () => {
     });
 
     expect(screen.queryByText(testContent)).not.toBeInTheDocument();
+  });
+
+  it('overlay.unmountAll을 통해 열려있는 모든 overlay를 언마운트할 수 있어야 한다.', async () => {
+    const wrapper = ({ children }: PropsWithChildren) => <OverlayProvider>{children}</OverlayProvider>;
+
+    const testContent1 = 'context-modal-test-content-1';
+    const testContent2 = 'context-modal-test-content-2';
+    const testContent3 = 'context-modal-test-content-3';
+    const testContent4 = 'context-modal-test-content-4';
+
+    const Component = () => {
+      useEffect(() => {
+        overlay.open(() => {
+          return <p>{testContent1}</p>;
+        });
+        overlay.open(() => {
+          return <p>{testContent2}</p>;
+        });
+        overlay.open(() => {
+          return <p>{testContent3}</p>;
+        });
+        overlay.open(() => {
+          return <p>{testContent4}</p>;
+        });
+      }, []);
+
+      return <div>Empty</div>;
+    };
+
+    render(<Component />, { wrapper });
+
+    overlay.unmountAll();
+
+    await waitFor(() => {
+      expect(screen.queryByText(testContent1)).not.toBeInTheDocument();
+      expect(screen.queryByText(testContent2)).not.toBeInTheDocument();
+      expect(screen.queryByText(testContent3)).not.toBeInTheDocument();
+      expect(screen.queryByText(testContent4)).not.toBeInTheDocument();
+    });
   });
 
   it('overlay.open을 통해 여러 개의 overlay를 열 수 있어야 한다', async () => {
